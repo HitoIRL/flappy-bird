@@ -8,6 +8,9 @@ struct WingSound(Handle<AudioSource>);
 #[derive(Resource)]
 struct HitSound(Handle<AudioSource>);
 
+#[derive(Resource)]
+struct FallSound(Handle<AudioSource>);
+
 #[derive(Event)]
 pub struct AddScoreEvent;
 
@@ -66,6 +69,9 @@ fn spawn_bird(
 
     let hit_sound = assets.load("audio/hit.ogg");
     commands.insert_resource(HitSound(hit_sound));
+
+    let fall_sound = assets.load("audio/die.ogg");
+    commands.insert_resource(FallSound(fall_sound));
 }
 
 fn reset_bird_position(mut query: Query<&mut Transform, With<Bird>>) {
@@ -97,7 +103,6 @@ fn bird_input(
 // check for collision with pipes and map borders, send score event
 fn collision_check(
     mut commands: Commands,
-    assets: Res<AssetServer>,
     images: Res<Assets<Image>>,
     window: Query<&Window>,
     mut next_state: ResMut<NextState<GameState>>,
@@ -105,6 +110,7 @@ fn collision_check(
     mut pipe_query: Query<(&Transform, &Handle<Image>, &mut Pipe)>,
     mut addscore_ev: EventWriter<AddScoreEvent>,
     hit_sound: Res<HitSound>,
+    fall_sound: Res<FallSound>,
 ) {
     let bird_transform = bird_query.single();
 
@@ -124,7 +130,7 @@ fn collision_check(
 
             // play pipe hit sound
             commands.spawn(AudioBundle {
-                source: assets.load("audio/hit.ogg"),
+                source: hit_sound.0.clone(),
                 settings: PlaybackSettings {
                     volume: Volume::Relative(VolumeLevel::new(0.1)),
                     ..Default::default()
@@ -147,7 +153,7 @@ fn collision_check(
 
         // play flew out sound
         commands.spawn(AudioBundle {
-            source: hit_sound.0.clone(),
+            source: fall_sound.0.clone(),
             settings: PlaybackSettings {
                 volume: Volume::Relative(VolumeLevel::new(0.1)),
                 ..Default::default()
